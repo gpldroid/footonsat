@@ -1,0 +1,944 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FootOnsat | جدول المباريات والقنوات الناقلة والإشعارات</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts: Cairo -->
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;800;900&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0fdf4',
+                            100: '#dcfce7',
+                            500: '#22c55e',
+                            600: '#16a34a',
+                            700: '#15803d',
+                            800: '#166534',
+                            900: '#14532d',
+                            accent: '#3b82f6'
+                        },
+                        darkbg: '#0f172a',
+                        darkcard: '#1e293b',
+                        darkborder: '#334155'
+                    },
+                    fontFamily: {
+                        cairo: ['Cairo', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Cairo', sans-serif;
+            user-select: none;
+        }
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.05);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #16a34a;
+            border-radius: 4px;
+        }
+        .pulse-live {
+            box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+            animation: pulse-red 1.8s infinite;
+        }
+        @keyframes pulse-red {
+            0% {
+                transform: scale(0.95);
+                box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+            }
+            70% {
+                transform: scale(1);
+                box-shadow: 0 0 0 8px rgba(239, 68, 68, 0);
+            }
+            100% {
+                transform: scale(0.95);
+                box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+            }
+        }
+        .glass {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(12px);
+        }
+        .dark .glass {
+            background: rgba(30, 41, 59, 0.85);
+            backdrop-filter: blur(12px);
+        }
+    </style>
+</head>
+<body class="bg-gray-100 dark:bg-darkbg text-gray-800 dark:text-gray-100 min-h-screen transition-colors duration-200">
+
+    <!-- Simulated Toast Notification Banner -->
+    <div id="toast-container" class="fixed top-5 left-5 z-50 flex flex-col gap-3 max-w-sm w-full pointer-events-none"></div>
+
+    <!-- Mobile Frame Wrapper Toggle Container -->
+    <div id="app-container" class="max-w-7xl mx-auto px-2 sm:px-4 py-3 transition-all duration-300">
+        
+        <!-- Header Controls Bar (Timezone, Mode Switcher, Dark Mode, Notification Demo) -->
+        <header class="bg-white dark:bg-darkcard rounded-2xl shadow-lg p-3 sm:p-4 mb-4 border border-gray-200 dark:border-darkborder transition-all">
+            <div class="flex flex-wrap items-center justify-between gap-3">
+                
+                <!-- Logo & Branding -->
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-tr from-brand-600 to-emerald-400 rounded-2xl flex items-center justify-center text-white text-xl sm:text-2xl shadow-md shadow-brand-500/30">
+                        <i class="fa-solid font-bold fa-satellite-dish"></i>
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <h1 class="text-xl sm:text-2xl font-black text-brand-600 dark:text-brand-500 tracking-wide">Foot<span class="text-emerald-500 dark:text-emerald-400">On</span>sat</h1>
+                            <span class="bg-brand-100 dark:bg-brand-900/60 text-brand-700 dark:text-brand-300 text-xs px-2 py-0.5 rounded-full font-bold">بث وإشعارات</span>
+                        </div>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 font-semibold">مواعيد المباريات والقنوات الناقلة والإشعارات المباشرة</p>
+                    </div>
+                </div>
+
+                <!-- Action Controls -->
+                <div class="flex items-center flex-wrap gap-2 text-xs sm:text-sm">
+                    
+                    <!-- Timezone Selector -->
+                    <div class="flex items-center bg-gray-100 dark:bg-gray-800 rounded-xl px-2.5 py-1.5 border border-gray-200 dark:border-gray-700">
+                        <i class="fa-regular fa-clock text-brand-600 dark:text-brand-400 ml-1.5"></i>
+                        <select id="timezone-select" class="bg-transparent font-bold focus:outline-none cursor-pointer dark:text-gray-200" onchange="renderMatches()">
+                            <option value="0" class="dark:bg-darkcard">توقيت غرينتش (GMT)</option>
+                            <option value="1" class="dark:bg-darkcard" selected>المغرب / الجزائر (GMT+1)</option>
+                            <option value="2" class="dark:bg-darkcard">مصر / الأردن (GMT+2)</option>
+                            <option value="3" class="dark:bg-darkcard">مكة المكرمة (GMT+3)</option>
+                            <option value="4" class="dark:bg-darkcard">الإمارات (GMT+4)</option>
+                        </select>
+                    </div>
+
+                    <!-- Layout Mode Switcher (Web / Phone Simulator) -->
+                    <button onclick="toggleViewMode()" id="view-mode-btn" class="flex items-center gap-1.5 bg-brand-50 dark:bg-gray-800 text-brand-700 dark:text-brand-400 font-bold px-3 py-1.5 rounded-xl hover:bg-brand-100 dark:hover:bg-gray-700 border border-brand-200 dark:border-gray-700 transition">
+                        <i class="fa-solid fa-mobile-screen-button text-sm"></i>
+                        <span id="view-mode-text">عرض الهاتف</span>
+                    </button>
+
+                    <!-- Test Live Notification Simulation -->
+                    <button onclick="triggerSimulatedGoalNotification()" class="flex items-center gap-1.5 bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 font-bold px-3 py-1.5 rounded-xl hover:bg-rose-100 border border-rose-200 dark:border-rose-900/50 transition">
+                        <i class="fa-solid fa-bell-ring animate-bounce"></i>
+                        <span>تجربة إشعار هدف</span>
+                    </button>
+
+                    <!-- Theme Toggle -->
+                    <button onclick="toggleDarkMode()" class="w-9 h-9 flex items-center justify-center rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-yellow-400 hover:bg-gray-200 dark:hover:bg-gray-700 transition">
+                        <i class="fa-solid fa-moon dark:hidden"></i>
+                        <i class="fa-solid fa-sun hidden dark:block"></i>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Wrapper with Outer Phone Mockup Frame Support -->
+        <div id="view-viewport" class="w-full transition-all duration-300">
+            
+            <!-- Main Desktop / App Screen -->
+            <main class="bg-white dark:bg-darkcard rounded-2xl shadow-xl border border-gray-200 dark:border-darkborder overflow-hidden min-h-[720px] flex flex-col">
+                
+                <!-- Navigation & Date Selector Bar -->
+                <div class="bg-gray-50 dark:bg-gray-800/80 p-3 border-b border-gray-200 dark:border-darkborder">
+                    
+                    <!-- Search & Filter Controls -->
+                    <div class="flex flex-col sm:flex-row items-center justify-between gap-3 mb-3">
+                        
+                        <!-- Search Box -->
+                        <div class="relative w-full sm:w-72">
+                            <i class="fa-solid fa-magnifying-glass absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                            <input type="text" id="search-input" placeholder="ابحث عن فريق، بطولة، قناة..." oninput="handleSearch()" class="w-full pl-3 pr-9 py-2 rounded-xl bg-white dark:bg-darkcard border border-gray-300 dark:border-gray-700 focus:outline-none focus:border-brand-500 text-xs sm:text-sm font-semibold transition">
+                        </div>
+
+                        <!-- Main Tab Selector -->
+                        <div class="flex items-center gap-1 bg-gray-200 dark:bg-gray-700 p-1 rounded-xl w-full sm:w-auto overflow-x-auto text-xs font-bold">
+                            <button onclick="switchTab('matches')" id="tab-btn-matches" class="flex-1 sm:flex-none px-3 py-1.5 rounded-lg bg-white dark:bg-darkcard text-brand-600 dark:text-brand-400 shadow-sm transition flex items-center justify-center gap-1.5">
+                                <i class="fa-regular fa-calendar-days"></i> المباريات
+                            </button>
+                            <button onclick="switchTab('satellites')" id="tab-btn-satellites" class="flex-1 sm:flex-none px-3 py-1.5 rounded-lg text-gray-600 dark:text-gray-300 hover:text-brand-600 transition flex items-center justify-center gap-1.5">
+                                <i class="fa-solid fa-tv"></i> القنوات والأقمار
+                            </button>
+                            <button onclick="switchTab('favorites')" id="tab-btn-favorites" class="flex-1 sm:flex-none px-3 py-1.5 rounded-lg text-gray-600 dark:text-gray-300 hover:text-brand-600 transition flex items-center justify-center gap-1.5">
+                                <i class="fa-solid fa-star text-amber-500"></i> المفضلة (<span id="fav-count">0</span>)
+                            </button>
+                            <button onclick="switchTab('notifications')" id="tab-btn-notifications" class="flex-1 sm:flex-none px-3 py-1.5 rounded-lg text-gray-600 dark:text-gray-300 hover:text-brand-600 transition flex items-center justify-center gap-1.5">
+                                <i class="fa-solid fa-sliders"></i> إعدادات التنبيه
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Date Carousel Bar (For Matches Tab) -->
+                    <div id="date-carousel-container" class="flex items-center justify-between gap-1 overflow-x-auto py-1 no-scrollbar">
+                        <button onclick="setDateFilter('yesterday')" id="date-yesterday" class="date-btn flex-shrink-0 px-3 sm:px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-xs sm:text-sm font-bold text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition">
+                            أمس <span class="block text-[10px] opacity-75" id="label-date-yesterday">--/--</span>
+                        </button>
+                        <button onclick="setDateFilter('today')" id="date-today" class="date-btn flex-shrink-0 px-4 sm:px-6 py-2 rounded-xl bg-brand-600 text-white font-black text-xs sm:text-sm shadow-md shadow-brand-500/20 transition">
+                            اليوم <span class="block text-[10px] text-brand-100" id="label-date-today">--/--</span>
+                        </button>
+                        <button onclick="setDateFilter('tomorrow')" id="date-tomorrow" class="date-btn flex-shrink-0 px-3 sm:px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-xs sm:text-sm font-bold text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition">
+                            غداً <span class="block text-[10px] opacity-75" id="label-date-tomorrow">--/--</span>
+                        </button>
+
+                        <!-- Quick Match Status Filter Pills -->
+                        <div class="h-6 w-px bg-gray-300 dark:bg-gray-700 mx-1"></div>
+                        <div class="flex items-center gap-1">
+                            <button onclick="setStatusFilter('all')" id="status-all" class="status-btn bg-brand-100 dark:bg-brand-900/50 text-brand-700 dark:text-brand-300 px-3 py-1.5 rounded-lg text-xs font-bold transition">الكل</button>
+                            <button onclick="setStatusFilter('live')" id="status-live" class="status-btn text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1">
+                                <span class="w-2 h-2 rounded-full bg-red-500 inline-block pulse-live"></span> مباشر
+                            </button>
+                            <button onclick="setStatusFilter('upcoming')" id="status-upcoming" class="status-btn text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 px-3 py-1.5 rounded-lg text-xs font-bold transition">القادمة</button>
+                            <button onclick="setStatusFilter('finished')" id="status-finished" class="status-btn text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 px-3 py-1.5 rounded-lg text-xs font-bold transition">المنتهية</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Content Area -->
+                <div class="flex-1 p-3 sm:p-5 overflow-y-auto max-h-[600px]" id="main-content-area">
+                    
+                    <!-- 1. MATCHES TAB CONTENT -->
+                    <div id="view-matches-tab" class="space-y-6">
+                        <!-- Matches Rendered Here dynamically -->
+                    </div>
+
+                    <!-- 2. SATELLITES & CHANNELS TAB CONTENT -->
+                    <div id="view-satellites-tab" class="hidden space-y-6">
+                        <div class="flex items-center justify-between border-b pb-3 border-gray-200 dark:border-gray-700">
+                            <div>
+                                <h2 class="text-lg font-bold text-gray-800 dark:text-gray-100 flex items-center gap-2">
+                                    <i class="fa-solid fa-satellite text-brand-600"></i> دليل الأقمار والتشفير وترددات القنوات
+                                </h2>
+                                <p class="text-xs text-gray-500 dark:text-gray-400">احصل على معلومات الصحن اللازم واستقطاب القنوات الرياضية الناقلة للمباريات</p>
+                            </div>
+                        </div>
+
+                        <!-- Satellites List -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="satellites-list">
+                            <!-- Satellites injected via JS -->
+                        </div>
+                    </div>
+
+                    <!-- 3. FAVORITES TAB CONTENT -->
+                    <div id="view-favorites-tab" class="hidden space-y-4">
+                        <div class="p-4 bg-amber-50 dark:bg-amber-950/30 rounded-2xl border border-amber-200 dark:border-amber-900/40 flex items-center gap-3">
+                            <i class="fa-solid fa-star text-2xl text-amber-500"></i>
+                            <div>
+                                <h3 class="font-bold text-amber-800 dark:text-amber-300 text-sm">مبارياتك وفِرَقك المفضلة</h3>
+                                <p class="text-xs text-amber-700 dark:text-amber-400">انقر على النجمة بجانب أي مباراة أو فريق لإضافته لقائمتك ليصلك إشعار خاص قبل الانطلاق وعند الأهداف.</p>
+                            </div>
+                        </div>
+
+                        <div id="favorites-matches-list" class="space-y-4">
+                            <!-- Favorite matches appear here -->
+                        </div>
+                    </div>
+
+                    <!-- 4. NOTIFICATIONS SETTINGS TAB -->
+                    <div id="view-notifications-tab" class="hidden space-y-6 max-w-2xl mx-auto">
+                        <div class="bg-gradient-to-r from-brand-600 to-emerald-600 text-white rounded-2xl p-5 shadow-lg">
+                            <div class="flex items-center gap-3 mb-2">
+                                <i class="fa-solid fa-bell text-3xl"></i>
+                                <div>
+                                    <h2 class="text-lg font-black">إعدادات الإشعارات الفورية (Push Notifications)</h2>
+                                    <p class="text-xs opacity-90">تحكّم بالتنبيهات التي تود استقبالها بسلاسة من FootOnsat</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-gray-50 dark:bg-gray-800/60 rounded-2xl p-4 border border-gray-200 dark:border-gray-700 space-y-4">
+                            
+                            <div class="flex items-center justify-between pb-3 border-b border-gray-200 dark:border-gray-700">
+                                <div>
+                                    <h4 class="font-bold text-sm">تفعيل إشعارات متصفح الجهاز / التطبيق</h4>
+                                    <p class="text-xs text-gray-500 dark:text-gray-400">استلام التنبيهات حتى لو كان التطبيق بالخلفية</p>
+                                </div>
+                                <label class="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" id="setting-master-notif" checked onchange="toggleMasterNotificationSetting()" class="sr-only peer">
+                                    <div class="w-11 h-6 bg-gray-300 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brand-600"></div>
+                                </label>
+                            </div>
+
+                            <div class="space-y-3">
+                                <h4 class="font-bold text-xs text-gray-400 uppercase tracking-wider">أنواع الإشعارات المفضلة</h4>
+                                
+                                <label class="flex items-center justify-between p-3 bg-white dark:bg-darkcard rounded-xl border border-gray-200 dark:border-gray-700 cursor-pointer">
+                                    <span class="flex items-center gap-2 text-xs sm:text-sm font-semibold">
+                                        <i class="fa-solid fa-futbol text-emerald-500"></i> إشعارات الأهداف المباشرة
+                                    </span>
+                                    <input type="checkbox" checked class="w-4 h-4 text-brand-600 rounded focus:ring-brand-500">
+                                </label>
+
+                                <label class="flex items-center justify-between p-3 bg-white dark:bg-darkcard rounded-xl border border-gray-200 dark:border-gray-700 cursor-pointer">
+                                    <span class="flex items-center gap-2 text-xs sm:text-sm font-semibold">
+                                        <i class="fa-solid fa-stopwatch text-amber-500"></i> تذكير قبل المباراة بـ 15 دقيقة
+                                    </span>
+                                    <input type="checkbox" checked class="w-4 h-4 text-brand-600 rounded focus:ring-brand-500">
+                                </label>
+
+                                <label class="flex items-center justify-between p-3 bg-white dark:bg-darkcard rounded-xl border border-gray-200 dark:border-gray-700 cursor-pointer">
+                                    <span class="flex items-center gap-2 text-xs sm:text-sm font-semibold">
+                                        <i class="fa-solid fa-square-full text-red-500 rotate-12"></i> البطاقات الحمراء وركلات الجزاء
+                                    </span>
+                                    <input type="checkbox" checked class="w-4 h-4 text-brand-600 rounded focus:ring-brand-500">
+                                </label>
+
+                                <label class="flex items-center justify-between p-3 bg-white dark:bg-darkcard rounded-xl border border-gray-200 dark:border-gray-700 cursor-pointer">
+                                    <span class="flex items-center gap-2 text-xs sm:text-sm font-semibold">
+                                        <i class="fa-solid fa-flag-checkered text-blue-500"></i> صفارة النهاية والنتيجة النهائية
+                                    </span>
+                                    <input type="checkbox" checked class="w-4 h-4 text-brand-600 rounded focus:ring-brand-500">
+                                </label>
+                            </div>
+
+                            <button onclick="saveNotificationSettings()" class="w-full bg-brand-600 hover:bg-brand-700 text-white font-bold py-2.5 rounded-xl shadow-md transition text-xs sm:text-sm mt-3">
+                                حفظ الإعدادات
+                            </button>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- Footer / Status Bar -->
+                <footer class="bg-gray-50 dark:bg-gray-800/80 px-4 py-2.5 border-t border-gray-200 dark:border-darkborder text-xs flex flex-wrap items-center justify-between gap-2 text-gray-500 dark:text-gray-400">
+                    <div class="flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-emerald-500 inline-block animate-ping"></span>
+                        <span>مُتصل بالسيرفر المباشر لـ FootOnsat</span>
+                    </div>
+                    <div>
+                        <span>تحديث تلقائي كل 30 ثانية</span>
+                    </div>
+                </footer>
+            </main>
+        </div>
+    </div>
+
+    <!-- Match Details Modal -->
+    <div id="match-modal" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm hidden flex items-center justify-center p-3">
+        <div class="bg-white dark:bg-darkcard rounded-3xl max-w-lg w-full overflow-hidden shadow-2xl border border-gray-200 dark:border-darkborder animate-in fade-in zoom-in duration-200">
+            <!-- Modal Header -->
+            <div class="bg-gradient-to-r from-gray-900 to-gray-800 text-white p-4 relative">
+                <button onclick="closeMatchModal()" class="absolute left-4 top-4 w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+                <div class="text-center text-xs font-semibold text-emerald-400 mb-1" id="modal-league">--</div>
+                
+                <!-- Scoreboard inside modal -->
+                <div class="flex items-center justify-around my-2">
+                    <div class="text-center flex-1">
+                        <div id="modal-home-logo" class="w-12 h-12 mx-auto mb-1 flex items-center justify-center font-bold text-lg bg-gray-700 text-white rounded-full">--</div>
+                        <span class="font-bold text-xs sm:text-sm block truncate" id="modal-home-name">--</span>
+                    </div>
+                    <div class="px-3 text-center">
+                        <div class="text-2xl font-black text-emerald-400 font-mono" id="modal-score">-- : --</div>
+                        <span class="text-[11px] px-2 py-0.5 rounded-full bg-white/20 font-semibold" id="modal-status">--</span>
+                    </div>
+                    <div class="text-center flex-1">
+                        <div id="modal-away-logo" class="w-12 h-12 mx-auto mb-1 flex items-center justify-center font-bold text-lg bg-gray-700 text-white rounded-full">--</div>
+                        <span class="font-bold text-xs sm:text-sm block truncate" id="modal-away-name">--</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal Body Details -->
+            <div class="p-4 sm:p-5 space-y-4 max-h-[70vh] overflow-y-auto">
+                
+                <!-- Channel & Satellite Info -->
+                <div class="bg-gray-50 dark:bg-gray-800/80 rounded-2xl p-3 sm:p-4 border border-gray-200 dark:border-gray-700 space-y-2">
+                    <h4 class="text-xs font-bold text-brand-600 dark:text-brand-400 uppercase flex items-center gap-1.5">
+                        <i class="fa-solid fa-satellite-dish"></i> تفاصيل البث والمعلق
+                    </h4>
+                    
+                    <div class="grid grid-cols-2 gap-2 text-xs">
+                        <div class="bg-white dark:bg-darkcard p-2 rounded-xl border border-gray-100 dark:border-gray-700">
+                            <span class="text-gray-400 block text-[10px]">القناة الناقلة:</span>
+                            <span class="font-bold text-gray-800 dark:text-gray-200" id="modal-channel">--</span>
+                        </div>
+                        <div class="bg-white dark:bg-darkcard p-2 rounded-xl border border-gray-100 dark:border-gray-700">
+                            <span class="text-gray-400 block text-[10px]">المعلق الرياضي:</span>
+                            <span class="font-bold text-gray-800 dark:text-gray-200" id="modal-commentator">--</span>
+                        </div>
+                        <div class="bg-white dark:bg-darkcard p-2 rounded-xl border border-gray-100 dark:border-gray-700">
+                            <span class="text-gray-400 block text-[10px]">القمر الصناعي والتردد:</span>
+                            <span class="font-bold text-emerald-600 dark:text-emerald-400" id="modal-sat">--</span>
+                        </div>
+                        <div class="bg-white dark:bg-darkcard p-2 rounded-xl border border-gray-100 dark:border-gray-700">
+                            <span class="text-gray-400 block text-[10px]">الملعب / المدينة:</span>
+                            <span class="font-bold text-gray-800 dark:text-gray-200" id="modal-stadium">--</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Match Time adjusted -->
+                <div class="flex items-center justify-between text-xs bg-brand-50 dark:bg-brand-950/40 p-3 rounded-xl border border-brand-200 dark:border-brand-900/50">
+                    <span class="font-bold text-brand-800 dark:text-brand-300">توقيت المباراة حسب منطقتك المختارة:</span>
+                    <span class="font-black text-brand-700 dark:text-brand-400 text-sm" id="modal-time-formatted">--:--</span>
+                </div>
+
+                <!-- Toggle Notification Action in Modal -->
+                <button id="modal-notif-btn" onclick="toggleMatchNotificationFromModal()" class="w-full py-3 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-md transition">
+                    <i class="fa-solid fa-bell"></i>
+                    <span id="modal-notif-btn-text">تفعيل الإشعارات لهذه المباراة</span>
+                </button>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript Application Logic -->
+    <script>
+        /* Mock Dataset for Matches */
+        const matchesData = [
+            {
+                id: 101,
+                league: "دوري أبطال أوروبا - دور المجموعات",
+                home: "ريال مدريد",
+                away: "مانشستر سيتي",
+                homeLogo: "RM",
+                awayLogo: "MC",
+                timeUTC: "20:00",
+                date: "today",
+                status: "live", // live, upcoming, finished
+                minute: "68'",
+                homeScore: 2,
+                awayScore: 1,
+                channel: "beIN Sports HD 1",
+                sat: "Nilesat 7°W - 11013 H",
+                commentator: "حفيظ دراجي",
+                stadium: "سانتياغو برنابيو (مدريد)"
+            },
+            {
+                id: 102,
+                league: "الدوري الإسباني - La Liga",
+                home: "برشلونة",
+                away: "أتلتيكو مدريد",
+                homeLogo: "BAR",
+                awayLogo: "ATM",
+                timeUTC: "18:00",
+                date: "today",
+                status: "upcoming",
+                minute: "",
+                homeScore: 0,
+                awayScore: 0,
+                channel: "beIN Sports HD 3",
+                sat: "Badr 26°E - 11585 V",
+                commentator: "عصام الشوالي",
+                stadium: "سبوتيفاي كامب نو (برشلونة)"
+            },
+            {
+                id: 103,
+                league: "الدوري الإنجليزي الممتاز - Premier League",
+                home: "ليفربول",
+                away: "أرسنال",
+                homeLogo: "LIV",
+                awayLogo: "ARS",
+                timeUTC: "16:30",
+                date: "today",
+                status: "finished",
+                minute: "FT",
+                homeScore: 3,
+                awayScore: 2,
+                channel: "beIN Sports HD 1 Premium",
+                sat: "Nilesat 7°W - 11054 H",
+                commentator: "خليل البلوشي",
+                stadium: "أنفيلد (ليفربول)"
+            },
+            {
+                id: 104,
+                league: "دوري أبطال إفريقيا - CAF Champions League",
+                home: "الوداد الرياضي",
+                away: "الأهلي المصري",
+                homeLogo: "WAC",
+                awayLogo: "AHL",
+                timeUTC: "19:00",
+                date: "today",
+                status: "upcoming",
+                minute: "",
+                homeScore: 0,
+                awayScore: 0,
+                channel: "beIN Sports HD 4",
+                sat: "Nilesat 7°W - 11013 H",
+                commentator: "جواد بدة",
+                stadium: "المركب الرياضي محمد الخامس (الدار البيضاء)"
+            },
+            {
+                id: 105,
+                league: "الدوري الإيطالي - Serie A",
+                home: "إنتر ميلان",
+                away: "إيه سي ميلان",
+                homeLogo: "INT",
+                awayLogo: "MIL",
+                timeUTC: "19:45",
+                date: "tomorrow",
+                status: "upcoming",
+                minute: "",
+                homeScore: 0,
+                awayScore: 0,
+                channel: "AD Sports Premium 1",
+                sat: "Hotbird 13°E - 11747 H",
+                commentator: "فارس عوض",
+                stadium: "سان سيرو (ميلانو)"
+            },
+            {
+                id: 106,
+                league: "الدوري السعودي للمحترفين - Roshan Saudi League",
+                home: "الهلال",
+                away: "النصر",
+                homeLogo: "HIL",
+                awayLogo: "NSR",
+                timeUTC: "17:00",
+                date: "yesterday",
+                status: "finished",
+                minute: "FT",
+                homeScore: 2,
+                awayScore: 2,
+                channel: "SSC News HD",
+                sat: "Badr 26°E - 12418 H",
+                commentator: "فهد العتيبي",
+                stadium: "المملكة أرينا (الرياض)"
+            }
+        ];
+
+        /* Satellites and Channels Directory */
+        const satellitesData = [
+            {
+                name: "نايلسات (Nilesat 7.0°W)",
+                channels: [
+                    { name: "beIN Sports HD 1", freq: "11013 H 27500", encryption: "مشفرة (الباقة القطرية)" },
+                    { name: "beIN Sports News HD", freq: "11054 H 27500", encryption: "مفتوحة مجاناً" },
+                    { name: "OnTime Sports", freq: "11861 V 27500", encryption: "مفتوحة" }
+                ]
+            },
+            {
+                name: "أسترا (Astra 19.2°E)",
+                channels: [
+                    { name: "DAZN 1 Bar HD", freq: "11171 H 22000", encryption: "مشفرة" },
+                    { name: "M. Liga de Campeones", freq: "10729 V 22000", encryption: "مشفرة" },
+                    { name: "Canal+ Sport France", freq: "12012 V 29700", encryption: "مشفرة" }
+                ]
+            },
+            {
+                name: "هوت بيرد (Hotbird 13.0°E)",
+                channels: [
+                    { name: "Polsat Sport Premium 1", freq: "11117 V 27500", encryption: "مشفرة" },
+                    { name: "Elevent Sports 1 HD", freq: "11488 H 27500", encryption: "مشفرة" },
+                    { name: "Rai Sport HD", freq: "11013 H 29900", encryption: "مفتوحة مجاناً" }
+                ]
+            },
+            {
+                name: "عربسات / بدر (Badr 26.0°E)",
+                channels: [
+                    { name: "SSC Sports 1 HD", freq: "12418 H 27500", encryption: "مشفرة (GOBX)" },
+                    { name: "Alkass HD One", freq: "11919 H 27500", encryption: "مفتوحة" }
+                ]
+            }
+        ];
+
+        /* Application State Variables */
+        let state = {
+            currentTab: 'matches', // matches, satellites, favorites, notifications
+            dateFilter: 'today',
+            statusFilter: 'all',
+            searchQuery: '',
+            isMobileView: false,
+            activeMatchId: null,
+            favorites: JSON.parse(localStorage.getItem('footonsat_favs') || '[]'),
+            notificationsEnabled: JSON.parse(localStorage.getItem('footonsat_notifs_enabled') || 'true')
+        };
+
+        // Initialize App on DOM Loaded
+        window.onload = function() {
+            setupDatesLabels();
+            renderMatches();
+            renderSatellites();
+            updateFavCount();
+        };
+
+        // Date Calculations & Labels Setup
+        function setupDatesLabels() {
+            const now = new Date();
+            
+            const yesterday = new Date(now);
+            yesterday.setDate(now.getDate() - 1);
+            
+            const tomorrow = new Date(now);
+            tomorrow.setDate(now.getDate() + 1);
+
+            document.getElementById('label-date-yesterday').innerText = `${yesterday.getDate()}/${yesterday.getMonth()+1}`;
+            document.getElementById('label-date-today').innerText = `${now.getDate()}/${now.getMonth()+1}`;
+            document.getElementById('label-date-tomorrow').innerText = `${tomorrow.getDate()}/${tomorrow.getMonth()+1}`;
+        }
+
+        // Adjust Match Time According to User Timezone Offset
+        function formatMatchTime(utcTimeStr) {
+            const tzOffsetHours = parseInt(document.getElementById('timezone-select').value) || 0;
+            const [hours, minutes] = utcTimeStr.split(':').map(Number);
+            let localHours = (hours + tzOffsetHours) % 24;
+            if (localHours < 0) localHours += 24;
+            return `${String(localHours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+        }
+
+        // Filter and Render Matches
+        function renderMatches() {
+            const container = document.getElementById('view-matches-tab');
+            container.innerHTML = '';
+
+            let filtered = matchesData.filter(m => m.date === state.dateFilter);
+
+            // Filter by Status Pill
+            if (state.statusFilter !== 'all') {
+                filtered = filtered.filter(m => m.status === state.statusFilter);
+            }
+
+            // Filter by Search Input
+            if (state.searchQuery.trim() !== '') {
+                const q = state.searchQuery.toLowerCase();
+                filtered = matchesData.filter(m => 
+                    m.home.toLowerCase().includes(q) || 
+                    m.away.toLowerCase().includes(q) || 
+                    m.league.toLowerCase().includes(q) ||
+                    m.channel.toLowerCase().includes(q) ||
+                    m.commentator.toLowerCase().includes(q)
+                );
+            }
+
+            if (filtered.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-12 text-gray-400">
+                        <i class="fa-solid fa-futbol-ball text-4xl mb-3 animate-spin"></i>
+                        <p class="font-bold text-sm">لا توجد مباريات مسجلة لهذا العرض.</p>
+                        <span class="text-xs">جرّب اختيار تاريخ آخر أو البحث عن اسم فريق آخر.</span>
+                    </div>
+                `;
+                return;
+            }
+
+            // Group Matches By League
+            const grouped = {};
+            filtered.forEach(match => {
+                if (!grouped[match.league]) grouped[match.league] = [];
+                grouped[match.league].push(match);
+            });
+
+            // Build HTML for Grouped Matches
+            for (const [leagueName, matches] of Object.entries(grouped)) {
+                const leagueCard = document.createElement('div');
+                leagueCard.className = "bg-gray-50 dark:bg-gray-800/50 rounded-2xl border border-gray-200 dark:border-gray-700/80 overflow-hidden shadow-sm";
+
+                let matchesHTML = matches.map(m => {
+                    const isFav = state.favorites.includes(m.id);
+                    const formattedTime = formatMatchTime(m.timeUTC);
+
+                    let statusBadgeHTML = '';
+                    if (m.status === 'live') {
+                        statusBadgeHTML = `<span class="px-2 py-0.5 rounded-md bg-red-500 text-white font-black text-[10px] flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-white pulse-live"></span> مباشر ${m.minute}</span>`;
+                    } else if (m.status === 'finished') {
+                        statusBadgeHTML = `<span class="px-2 py-0.5 rounded-md bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 font-bold text-[10px]">انتهت</span>`;
+                    } else {
+                        statusBadgeHTML = `<span class="px-2 py-0.5 rounded-md bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 font-bold text-[10px]">${formattedTime}</span>`;
+                    }
+
+                    return `
+                        <div onclick="openMatchModal(${m.id})" class="p-3 bg-white dark:bg-darkcard border-t border-gray-100 dark:border-gray-700/60 hover:bg-emerald-50/50 dark:hover:bg-gray-700/40 transition cursor-pointer flex flex-col sm:flex-row items-center justify-between gap-3">
+                            
+                            <!-- Team 1 vs Team 2 Scoreboard -->
+                            <div class="flex items-center justify-between w-full sm:w-2/3 gap-2">
+                                
+                                <!-- Home Team -->
+                                <div class="flex items-center gap-2 flex-1 justify-end text-left sm:text-right">
+                                    <span class="font-bold text-xs sm:text-sm text-gray-800 dark:text-gray-100 truncate">${m.home}</span>
+                                    <span class="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-emerald-600 text-white flex items-center justify-center font-black text-xs shadow-sm flex-shrink-0">${m.homeLogo}</span>
+                                </div>
+
+                                <!-- Score or Time -->
+                                <div class="px-3 py-1 bg-gray-100 dark:bg-gray-800 rounded-xl text-center flex flex-col items-center min-w-[70px]">
+                                    ${m.status === 'upcoming' ? 
+                                        `<span class="font-black text-xs text-brand-600 dark:text-brand-400 font-mono">${formattedTime}</span>` : 
+                                        `<span class="font-black text-sm text-gray-800 dark:text-gray-100 font-mono">${m.homeScore} - ${m.awayScore}</span>`
+                                    }
+                                    ${statusBadgeHTML}
+                                </div>
+
+                                <!-- Away Team -->
+                                <div class="flex items-center gap-2 flex-1 justify-start">
+                                    <span class="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-black text-xs shadow-sm flex-shrink-0">${m.awayLogo}</span>
+                                    <span class="font-bold text-xs sm:text-sm text-gray-800 dark:text-gray-100 truncate">${m.away}</span>
+                                </div>
+                            </div>
+
+                            <!-- Channel & Favorite Toggle -->
+                            <div class="flex items-center justify-between w-full sm:w-auto gap-3 text-xs pt-2 sm:pt-0 border-t sm:border-0 border-gray-100 dark:border-gray-800">
+                                <div class="text-gray-500 dark:text-gray-400 flex items-center gap-1 text-[11px]">
+                                    <i class="fa-solid fa-tv text-emerald-500"></i>
+                                    <span class="truncate max-w-[120px]">${m.channel}</span>
+                                </div>
+
+                                <button onclick="event.stopPropagation(); toggleFavorite(${m.id})" class="p-1.5 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition">
+                                    <i class="fa-solid fa-bell ${isFav ? 'text-amber-500 text-sm' : 'text-gray-300 dark:text-gray-600'}"></i>
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+
+                leagueCard.innerHTML = `
+                    <div class="px-3 py-2 bg-gray-100 dark:bg-gray-800/90 font-bold text-xs text-brand-700 dark:text-brand-300 flex items-center gap-2 border-b border-gray-200 dark:border-gray-700">
+                        <i class="fa-solid fa-trophy text-amber-500"></i> ${leagueName}
+                    </div>
+                    <div>${matchesHTML}</div>
+                `;
+
+                container.appendChild(leagueCard);
+            }
+        }
+
+        // Satellites Directory Render
+        function renderSatellites() {
+            const container = document.getElementById('satellites-list');
+            container.innerHTML = satellitesData.map(sat => `
+                <div class="bg-white dark:bg-darkcard p-4 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm space-y-3">
+                    <h3 class="font-bold text-sm text-emerald-600 dark:text-emerald-400 flex items-center gap-2 border-b pb-2 dark:border-gray-700">
+                        <i class="fa-solid fa-satellite-dish"></i> ${sat.name}
+                    </h3>
+                    <div class="space-y-2">
+                        ${sat.channels.map(c => `
+                            <div class="flex items-center justify-between p-2 rounded-xl bg-gray-50 dark:bg-gray-800/60 text-xs">
+                                <div>
+                                    <span class="font-bold block text-gray-800 dark:text-gray-200">${c.name}</span>
+                                    <span class="text-[10px] text-gray-400">التردد: ${c.freq}</span>
+                                </div>
+                                <span class="px-2 py-1 rounded-lg text-[10px] font-bold ${c.encryption.includes('مجاناً') ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300' : 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300'}">
+                                    ${c.encryption}
+                                </span>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Render Favorites List Tab
+        function renderFavorites() {
+            const container = document.getElementById('favorites-matches-list');
+            const favMatches = matchesData.filter(m => state.favorites.includes(m.id));
+
+            if (favMatches.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-10 text-gray-400">
+                        <i class="fa-regular fa-bell-slash text-3xl mb-2"></i>
+                        <p class="font-bold text-xs">لم تقم بإضافة أي مباراة لقائمة التنبيهات حتى الآن.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = favMatches.map(m => `
+                <div class="p-3 bg-white dark:bg-darkcard rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm flex items-center justify-between gap-2">
+                    <div class="flex items-center gap-2">
+                        <span class="w-8 h-8 rounded-full bg-brand-600 text-white flex items-center justify-center font-bold text-xs">${m.homeLogo}</span>
+                        <span class="text-xs font-bold">${m.home} vs ${m.away}</span>
+                        <span class="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-xs">${m.awayLogo}</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="text-xs font-mono text-emerald-500 font-bold">${formatMatchTime(m.timeUTC)}</span>
+                        <button onclick="toggleFavorite(${m.id})" class="text-red-500 text-xs hover:underline">إلغاء</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Toggle Favorites State
+        function toggleFavorite(id) {
+            const index = state.favorites.indexOf(id);
+            if (index > -1) {
+                state.favorites.splice(index, 1);
+                showToast("FootOnsat", "تم إلغاء التنبيه لهذه المباراة.");
+            } else {
+                state.favorites.push(id);
+                showToast("FootOnsat 🔔", "تم تفعيل الإشعارات الفورية لهذه المباراة بنجاح!");
+            }
+            localStorage.setItem('footonsat_favs', JSON.stringify(state.favorites));
+            updateFavCount();
+            renderMatches();
+            if (state.currentTab === 'favorites') renderFavorites();
+
+            // Update modal state if open
+            if (state.activeMatchId === id) {
+                updateModalNotifButton(state.favorites.includes(id));
+            }
+        }
+
+        function updateFavCount() {
+            document.getElementById('fav-count').innerText = state.favorites.length;
+        }
+
+        // Open Detailed Match Info Modal
+        function openMatchModal(id) {
+            const match = matchesData.find(m => m.id === id);
+            if (!match) return;
+
+            state.activeMatchId = id;
+            document.getElementById('modal-league').innerText = match.league;
+            document.getElementById('modal-home-name').innerText = match.home;
+            document.getElementById('modal-away-name').innerText = match.away;
+            document.getElementById('modal-home-logo').innerText = match.homeLogo;
+            document.getElementById('modal-away-logo').innerText = match.awayLogo;
+            document.getElementById('modal-score').innerText = match.status === 'upcoming' ? '-- : --' : `${match.homeScore} - ${match.awayScore}`;
+            document.getElementById('modal-status').innerText = match.status === 'live' ? `مباشر ${match.minute}` : (match.status === 'finished' ? 'انتهت' : 'لم تبدأ');
+            document.getElementById('modal-channel').innerText = match.channel;
+            document.getElementById('modal-commentator').innerText = match.commentator;
+            document.getElementById('modal-sat').innerText = match.sat;
+            document.getElementById('modal-stadium').innerText = match.stadium;
+            document.getElementById('modal-time-formatted').innerText = formatMatchTime(match.timeUTC);
+
+            updateModalNotifButton(state.favorites.includes(id));
+            document.getElementById('match-modal').classList.remove('hidden');
+        }
+
+        function updateModalNotifButton(isFav) {
+            const btn = document.getElementById('modal-notif-btn');
+            const btnText = document.getElementById('modal-notif-btn-text');
+            if (isFav) {
+                btn.className = "w-full py-3 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-md transition";
+                btnText.innerText = "إلغاء التنبيه للمباراة";
+            } else {
+                btn.className = "w-full py-3 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-md transition";
+                btnText.innerText = "تفعيل الإشعارات لهذه المباراة";
+            }
+        }
+
+        function toggleMatchNotificationFromModal() {
+            if (state.activeMatchId) {
+                toggleFavorite(state.activeMatchId);
+            }
+        }
+
+        function closeMatchModal() {
+            document.getElementById('match-modal').classList.add('hidden');
+            state.activeMatchId = null;
+        }
+
+        // Tab Switching Handler
+        function switchTab(tab) {
+            state.currentTab = tab;
+            
+            // Hide all tabs
+            ['matches', 'satellites', 'favorites', 'notifications'].forEach(t => {
+                document.getElementById(`view-${t}-tab`).classList.add('hidden');
+                document.getElementById(`tab-btn-${t}`).className = "flex-1 sm:flex-none px-3 py-1.5 rounded-lg text-gray-600 dark:text-gray-300 hover:text-brand-600 transition flex items-center justify-center gap-1.5 font-bold";
+            });
+
+            // Show selected
+            document.getElementById(`view-${tab}-tab`).classList.remove('hidden');
+            document.getElementById(`tab-btn-${tab}`).className = "flex-1 sm:flex-none px-3 py-1.5 rounded-lg bg-white dark:bg-darkcard text-brand-600 dark:text-brand-400 shadow-sm transition flex items-center justify-center gap-1.5 font-bold";
+
+            if (tab === 'favorites') renderFavorites();
+        }
+
+        // Date Filter Switcher
+        function setDateFilter(dateType) {
+            state.dateFilter = dateType;
+            document.querySelectorAll('.date-btn').forEach(btn => {
+                btn.className = "date-btn flex-shrink-0 px-3 sm:px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-xs sm:text-sm font-bold text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition";
+            });
+            const activeBtn = document.getElementById(`date-${dateType}`);
+            activeBtn.className = "date-btn flex-shrink-0 px-4 sm:px-6 py-2 rounded-xl bg-brand-600 text-white font-black text-xs sm:text-sm shadow-md shadow-brand-500/20 transition";
+            renderMatches();
+        }
+
+        // Status Filter Switcher
+        function setStatusFilter(status) {
+            state.statusFilter = status;
+            document.querySelectorAll('.status-btn').forEach(btn => {
+                btn.className = "status-btn text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 px-3 py-1.5 rounded-lg text-xs font-bold transition";
+            });
+            document.getElementById(`status-${status}`).className = "status-btn bg-brand-100 dark:bg-brand-900/50 text-brand-700 dark:text-brand-300 px-3 py-1.5 rounded-lg text-xs font-bold transition";
+            renderMatches();
+        }
+
+        // Search Input Handling
+        function handleSearch() {
+            state.searchQuery = document.getElementById('search-input').value;
+            renderMatches();
+        }
+
+        // Mobile / Web View Simulator Toggle
+        function toggleViewMode() {
+            const viewport = document.getElementById('view-viewport');
+            const btnText = document.getElementById('view-mode-text');
+            state.isMobileView = !state.isMobileView;
+
+            if (state.isMobileView) {
+                viewport.className = "max-w-[400px] mx-auto border-[10px] border-gray-800 rounded-[40px] shadow-2xl transition-all duration-300 overflow-hidden";
+                btnText.innerText = "عرض الويب الكامل";
+            } else {
+                viewport.className = "w-full transition-all duration-300";
+                btnText.innerText = "عرض الهاتف";
+            }
+        }
+
+        // Dark Mode Switcher
+        function toggleDarkMode() {
+            document.documentElement.classList.toggle('dark');
+        }
+
+        // Master Notification Setting
+        function toggleMasterNotificationSetting() {
+            state.notificationsEnabled = document.getElementById('setting-master-notif').checked;
+            localStorage.setItem('footonsat_notifs_enabled', state.notificationsEnabled);
+        }
+
+        function saveNotificationSettings() {
+            showToast("FootOnsat ⚙️", "تم حفظ تفضيلات الإشعارات بنجاح.");
+        }
+
+        // Simulated Goal Toast Banner
+        function triggerSimulatedGoalNotification() {
+            showToast("⚽ هدف مباشر! (FootOnsat)", "ريال مدريد 2 - 1 مانشستر سيتي (الدقيقة 68') بواسطة فينيسيوس جونيور!");
+        }
+
+        // Custom Toast Banner Renderer
+        function showToast(title, message) {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = "pointer-events-auto bg-gray-900/90 text-white p-3 sm:p-4 rounded-2xl shadow-2xl border border-emerald-500/30 backdrop-blur-md flex items-start gap-3 transform transition-all duration-300 translate-y-[-20px] opacity-0";
+            toast.innerHTML = `
+                <div class="w-8 h-8 rounded-full bg-emerald-500 text-white flex items-center justify-center font-bold shrink-0">
+                    <i class="fa-solid fa-futbol"></i>
+                </div>
+                <div class="flex-1">
+                    <h4 class="font-bold text-xs sm:text-sm text-emerald-400">${title}</h4>
+                    <p class="text-xs text-gray-200 mt-0.5">${message}</p>
+                </div>
+                <button onclick="this.parentElement.remove()" class="text-gray-400 hover:text-white text-xs">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            `;
+
+            container.appendChild(toast);
+            
+            // Animate In
+            setTimeout(() => {
+                toast.classList.remove('translate-y-[-20px]', 'opacity-0');
+            }, 10);
+
+            // Auto Remove after 4.5 seconds
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-[-20px]');
+                setTimeout(() => toast.remove(), 300);
+            }, 4500);
+        }
+    </script>
+</body>
+</html>
